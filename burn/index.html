@@ -230,6 +230,87 @@
       color: var(--ice);
       word-break: break-word;
     }
+
+    /* ===== MODAL & TOAST ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      width: min(90%, 360px);
+      background: rgba(10,12,14,0.95);
+      border: 1px solid var(--platinum);
+      border-radius: 2rem;
+      padding: 1.8rem 1.5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.7), 0 0 30px var(--platinum-glow);
+      text-align: center;
+    }
+    .modal-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .modal-title {
+      color: var(--ice);
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 0.8rem;
+    }
+    .modal-message {
+      color: var(--silver);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      word-break: break-word;
+    }
+    .modal-btn {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--platinum);
+      color: var(--platinum);
+      padding: 0.6rem 2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .modal-btn:hover {
+      background: var(--platinum);
+      color: #0a0c0e;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10,12,14,0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--ice);
+      border-radius: 3rem;
+      padding: 0.7rem 1.5rem;
+      color: var(--ice);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--platinum-glow);
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
     @media (max-width: 500px) {
       .vault { padding: 1.2rem; }
       h1 { font-size: 1.6rem; letter-spacing: 5px; }
@@ -237,6 +318,19 @@
   </style>
 </head>
 <body>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal()">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon">💎</div>
+    <div class="modal-title" id="modalTitle">INFO</div>
+    <div class="modal-message" id="modalMessage"></div>
+    <button class="modal-btn" onclick="hideModal()">CLOSE</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastMsg">COPIED</div>
 
 <div class="vault">
   <div class="header-ambient"></div>
@@ -278,6 +372,31 @@
 </div>
 
 <script>
+  // ========== MODAL & TOAST ==========
+  const modal = document.getElementById('modalOverlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalIcon = document.getElementById('modalIcon');
+  const toast = document.getElementById('toastMsg');
+
+  function showModal(title, message, icon = '💎') {
+    modalTitle.innerText = title;
+    modalMessage.innerText = message;
+    modalIcon.innerText = icon;
+    modal.style.display = 'flex';
+  }
+
+  function hideModal() {
+    modal.style.display = 'none';
+  }
+
+  function showToast(text, duration = 2000) {
+    toast.innerText = text;
+    toast.style.opacity = '1';
+    setTimeout(() => toast.style.opacity = '0', duration);
+  }
+
+  // ========== CLOCK ==========
   function updateClock() {
     const now = new Date();
     const timeStr = now.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -299,6 +418,7 @@
     document.querySelector('h1').innerText = "BURN DECRYPTION";
   }
 
+  // ========== CRYPTO ==========
   async function deriveKey(p) {
     const enc = new TextEncoder();
     const km = await crypto.subtle.importKey("raw", enc.encode(p), "PBKDF2", false, ["deriveKey"]);
@@ -337,7 +457,10 @@
   async function generateLink() {
     const txt = document.getElementById('msgBody').value.trim();
     const pass = document.getElementById('msgPass').value.trim();
-    if (!txt || !pass) return alert("MESSAGE & KEY REQUIRED.");
+    if (!txt || !pass) {
+      showModal('INCOMPLETE', 'Both message and passkey are required.', '🔐');
+      return;
+    }
     const cipher = await process(txt, pass, 'enc');
     const url = window.location.origin + window.location.pathname + '#' + cipher;
     document.getElementById('createMode').style.display = 'none';
@@ -348,21 +471,23 @@
 
   async function burnAndShow() {
     const pass = document.getElementById('openPass').value.trim();
-    if (!pass) return alert("KEY REQUIRED.");
+    if (!pass) {
+      showModal('KEY REQUIRED', 'Enter the decryption passkey.', '🔑');
+      return;
+    }
     const cipher = window.location.hash.substring(1);
     if (!cipher) {
-      alert("NO DATA FOUND.");
+      showModal('NO DATA', 'No encrypted payload found in URL.', '❌');
       return;
     }
     const res = await process(cipher, pass, 'dec');
     if (!res) {
-      alert("INVALID KEY OR CORRUPTED DATA.");
+      showModal('ACCESS DENIED', 'Invalid passkey or corrupted data.', '🚫');
       return;
     }
     const reveal = document.getElementById('contentReveal');
     reveal.innerText = res;
     reveal.style.display = 'block';
-    // Hapus hash dari URL (burn)
     history.replaceState(null, '', window.location.pathname);
     document.getElementById('status').innerText = "OBLITERATED";
     document.getElementById('readMode').querySelector('.btn-exec').style.display = 'none';
@@ -373,16 +498,27 @@
   function copyToClipboard() {
     const txt = document.getElementById('finalURL').innerText;
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(txt).then(() => alert("LINK COPIED."));
+      navigator.clipboard.writeText(txt).then(() => showToast('🔥 LINK COPIED')).catch(() => fallbackCopy(txt));
     } else {
-      const textArea = document.createElement("textarea");
-      textArea.value = txt;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      alert("LINK COPIED (FALLBACK).");
+      fallbackCopy(txt);
     }
+  }
+
+  function fallbackCopy(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    showToast('📋 LINK COPIED');
+  }
+
+  // PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    });
   }
 </script>
 </body>
