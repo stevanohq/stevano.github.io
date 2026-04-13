@@ -15,7 +15,6 @@
 --platinum: #b8c7d9; --platinum-glow: rgba(184,199,217,0.4);
 --ice: #c8d8e8; --gold: #d4af37; --silver: #9aaebf;
 --alert: #ff6b6b; --border: #1e2428;
-/* Kertas Terang Sesuai Request */
 --paper-bg: #cbd5e1; --paper-text: #0a0c0e;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -24,8 +23,7 @@ body { margin: 0; min-height: 100dvh; background: radial-gradient(circle at 30% 
 .header-ambient { width: 100%; height: 2px; margin-bottom: 1.2rem; background: linear-gradient(90deg, transparent, var(--gold), var(--ice), var(--gold), transparent); box-shadow: 0 0 10px rgba(212,175,55,0.4); }
 h1 { margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: 8px; background: linear-gradient(135deg, var(--ice), var(--gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-align: center; text-transform: uppercase; text-shadow: 0 0 12px rgba(212,175,55,0.3); }
 #nexusClock { text-align: center; font-size: 0.65rem; color: #8a9aa8; letter-spacing: 2px; margin-top: 8px; font-weight: bold; text-transform: uppercase; }
-.protocol-info { font-size: 9px; color: #888; text-align: center; letter-spacing: 2px; border: 1px solid #222; padding: 8px; border-radius: 6px; background: #050505; text-transform: uppercase; font-weight: bold; margin-top: 15px; }
-.main-area { display: flex; flex-direction: column; gap: 1rem; margin-top: 15px; }
+.main-area { display: flex; flex-direction: column; gap: 1rem; margin-top: 20px; }
 textarea { width: 100%; background: var(--paper-bg); border: 2px solid var(--gold); color: var(--paper-text); padding: 1.2rem; border-radius: 1.2rem; font-size: 1.05rem; font-weight: 600; line-height: 1.6; outline: none; transition: 0.2s; font-family: 'Inter', monospace; height: 140px; resize: vertical; box-shadow: inset 0 2px 10px rgba(0,0,0,0.15); }
 textarea::placeholder { color: #64748b; font-weight: normal; }
 textarea:focus { box-shadow: 0 0 15px rgba(212,175,55,0.3), inset 0 2px 5px rgba(0,0,0,0.1); }
@@ -69,10 +67,6 @@ button.btn-exec:hover { background: var(--gold); color: #0a0c0e; box-shadow: 0 6
 <h1>QUICK ROT</h1>
 <div id="nexusClock">V5.1 PROTOCOL</div>
 
-<div class="protocol-info">
-GLOBAL CIPHER: <span style="color:var(--gold)">L18</span> | <span style="color:var(--ice)">N8</span> | <span style="color:var(--alert)">S3</span>
-</div>
-
 <div class="main-area">
 <div id="createMode">
 <textarea id="msgBody" placeholder="INSERT CASUAL MESSAGE..."></textarea>
@@ -94,7 +88,7 @@ GLOBAL CIPHER: <span style="color:var(--gold)">L18</span> | <span style="color:v
 </div>
 
 <div class="status-bar">
-<span>ROT CIPHER + COMPRESSION</span>
+<span>ROT CIPHER ENGINE</span>
 <span id="status">NO_PASS_REQUIRED</span>
 </div>
 </div>
@@ -125,7 +119,6 @@ document.getElementById('readMode').style.display = 'block';
 document.querySelector('h1').innerText = "INCOMING ROT";
 }
 
-// LOGIKA ROT BOS STEVANO
 function applyRot(text, mode) {
 const L_SHIFT = 18; const N_SHIFT = 8; const S_SHIFT = 3;
 const syms = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
@@ -164,27 +157,28 @@ return rotOut.replace(/\{E([0-9a-fA-F]+)\}/g, (m, hex) => String.fromCodePoint(p
 }
 }
 
-// COMPRESSION ENGINE
-async function compressData(str) {
-const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-async function decompressData(uint8Array) {
-const stream = new Blob([uint8Array]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-return await new Response(stream).text();
+function encodeSafeBase64(str) {
+const bytes = new TextEncoder().encode(str);
+let binary = '';
+for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// EXECUTION FLOW
-async function generateLink() {
+function decodeSafeBase64(b64Url) {
+let b64 = b64Url.replace(/-/g, '+').replace(/_/g, '/');
+while (b64.length % 4) b64 += '=';
+const binary = atob(b64);
+const bytes = new Uint8Array(binary.length);
+for (let i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); }
+return new TextDecoder().decode(bytes);
+}
+
+function generateLink() {
 const txt = document.getElementById('msgBody').value.trim();
 if (!txt) return showModal('EMPTY', 'Silakan masukkan pesan terlebih dahulu.', '⚠️');
 
-// 1. Enkripsi pakai ROT Bos
 const rotText = applyRot(txt, 'enc');
-// 2. Kompres biar URL nggak bengkak
-const compressed = await compressData(rotText);
-// 3. Ubah ke Base64 aman untuk URL
-const base64Url = btoa(String.fromCharCode(...compressed)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const base64Url = encodeSafeBase64(rotText);
 
 const url = window.location.origin + window.location.pathname + '#' + base64Url;
 document.getElementById('createMode').style.display = 'none';
@@ -193,25 +187,18 @@ document.getElementById('finalURL').innerText = url;
 document.querySelector('h1').innerText = "LINK READY";
 }
 
-async function readAndWipe() {
+function readAndWipe() {
 const hashData = window.location.hash.substring(1);
 if (!hashData) return showModal('NO DATA', 'Link kosong atau rusak.', '❌');
 
 try {
-// 1. Balikin Base64 ke bentuk aslinya
-let b64 = hashData.replace(/-/g, '+').replace(/_/g, '/');
-while (b64.length % 4) b64 += '=';
-const compressed = new Uint8Array(atob(b64).split('').map(c => c.charCodeAt(0)));
-// 2. Dekompres
-const rotText = await decompressData(compressed);
-// 3. Dekripsi pakai ROT Bos
+const rotText = decodeSafeBase64(hashData);
 const plainText = applyRot(rotText, 'dec');
 
 const reveal = document.getElementById('contentReveal');
 reveal.innerText = plainText;
 reveal.style.display = 'block';
 
-// Hapus Hash dari URL
 history.replaceState(null, '', window.location.pathname);
 document.getElementById('status').innerText = "CLEARED";
 document.getElementById('readMode').querySelector('.btn-exec').style.display = 'none';
