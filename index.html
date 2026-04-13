@@ -1,312 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>NEXUS BURN · SERVERLESS</title>
-  <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#0f1215">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <style>
-    :root {
-      --bg: #0f1215;
-      --card: rgba(10,12,14,0.85);
-      --platinum: #b8c7d9;
-      --platinum-glow: rgba(184,199,217,0.4);
-      --ice: #c8d8e8;
-      --silver: #9aaebf;
-      --alert: #ff6b6b;
-      --ok: #6bcf9f;
-      --border: #1e2428;
-      
-      /* Warna Baru Buat Kertas Pesan */
-      --paper-bg: #cbd5e1; /* Putih keabu-abuan terang */
-      --paper-text: #0a0c0e; /* Hitam gelap */
-    }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body {
-      margin: 0; min-height: 100dvh;
-      background: radial-gradient(circle at 30% 10%, #0a0c0e, #030405);
-      font-family: 'Inter', 'Courier New', monospace;
-      display: flex; align-items: center; justify-content: center;
-      color: #eef2f5; padding: 15px; overflow: auto;
-    }
-    .vault {
-      width: 100%; max-width: 550px; background: var(--card); backdrop-filter: blur(14px);
-      padding: 1.8rem; border-radius: 2rem; border: 1px solid rgba(184,199,217,0.25);
-      box-shadow: 0 30px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-      display: flex; flex-direction: column; position: relative;
-    }
-    .header-ambient {
-      width: 100%; height: 2px; margin-bottom: 1.2rem;
-      background: linear-gradient(90deg, transparent, var(--platinum), var(--ice), var(--platinum), transparent);
-      box-shadow: 0 0 10px var(--platinum-glow);
-    }
-    h1 {
-      margin: 0; font-size: 2.2rem; font-weight: 700; letter-spacing: 8px;
-      background: linear-gradient(135deg, var(--ice), var(--platinum));
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-      text-align: center; text-transform: uppercase; text-shadow: 0 0 12px rgba(200,216,232,0.3);
-    }
-    #nexusClock {
-      text-align: center; font-size: 0.65rem; color: #8a9aa8; letter-spacing: 2px;
-      margin-top: 8px; font-weight: bold; text-transform: uppercase;
-    }
-    .main-area { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
-    
-    /* MODIFIKASI UI TEXTAREA (KERTAS PESAN) */
-    textarea {
-      width: 100%; background: var(--paper-bg); border: 2px solid var(--platinum);
-      color: var(--paper-text); padding: 1.2rem; border-radius: 1.2rem;
-      font-size: 1rem; font-weight: 600; line-height: 1.6; outline: none; transition: 0.2s;
-      font-family: 'Inter', monospace; height: 130px; resize: vertical;
-      box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
-    }
-    textarea::placeholder { color: #64748b; font-weight: normal; }
-    textarea:focus { box-shadow: 0 0 15px var(--platinum-glow), inset 0 2px 5px rgba(0,0,0,0.1); }
-    
-    input {
-      width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
-      color: var(--ice); padding: 0.9rem; border-radius: 1.2rem; font-size: 0.85rem;
-      line-height: 1.5; outline: none; transition: 0.2s; font-family: 'Inter', monospace;
-    }
-    input:focus { border-color: var(--platinum); box-shadow: 0 0 12px var(--platinum-glow); }
-    
-    .pass-wrapper { position: relative; width: 100%; }
-    input.pass-input { text-align: center; letter-spacing: 4px; }
-    .eye-btn {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      background: transparent; border: none; color: var(--silver); cursor: pointer;
-      font-size: 1rem; opacity: 0.7; outline: none;
-    }
-    .eye-btn:hover { color: var(--platinum); }
-    button.btn-exec {
-      width: 100%; padding: 0.9rem; background: rgba(0,0,0,0.5); border: 1px solid var(--platinum);
-      color: var(--platinum); font-weight: 700; cursor: pointer; text-transform: uppercase;
-      letter-spacing: 3px; transition: 0.2s ease; font-size: 0.75rem; outline: none;
-      border-radius: 2rem; backdrop-filter: blur(4px);
-    }
-    button.btn-exec:hover {
-      background: var(--platinum); color: #0a0c0e; box-shadow: 0 6px 14px var(--platinum-glow); transform: translateY(-2px);
-    }
-    .btn-red { border-color: var(--alert) !important; color: var(--alert) !important; }
-    .btn-red:hover { background: var(--alert) !important; color: #fff !important; box-shadow: 0 0 20px rgba(255,107,107,0.3) !important; }
-    #resultArea { margin-top: 1.2rem; display: none; text-align: center; border-top: 1px solid rgba(184,199,217,0.2); padding-top: 1.2rem; }
-    .link-box { background: rgba(0,0,0,0.5); border: 1px dashed var(--ice); padding: 0.8rem; font-size: 0.7rem; word-break: break-all; margin-bottom: 0.8rem; color: var(--ice); border-radius: 1rem; font-family: monospace; }
-    .action-row { display: flex; gap: 10px; margin-top: 0.8rem; }
-    .btn-util { flex: 1; padding: 0.6rem; background: rgba(0,0,0,0.4); color: var(--silver); border: 1px solid var(--border); font-size: 0.65rem; text-transform: uppercase; cursor: pointer; border-radius: 2rem; font-weight: 600; transition: 0.2s; }
-    .btn-util:hover { color: #fff; border-color: var(--platinum); background: rgba(184,199,217,0.1); }
-    .status-bar { font-size: 0.6rem; color: #6a7a8a; margin-top: 1.5rem; display: flex; justify-content: space-between; border-top: 1px solid rgba(184,199,217,0.2); padding-top: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
-    #status { font-weight: bold; color: var(--alert); }
-    
-    /* MODIFIKASI UI HASIL BACA (KERTAS PESAN) */
-    #contentReveal {
-      margin-top: 1.2rem; padding: 1.5rem; 
-      background: var(--paper-bg); /* Putih keabu-abuan terang */
-      border: 2px solid var(--platinum); border-radius: 1rem; display: none;
-      white-space: pre-wrap; 
-      font-size: 1.15rem; /* Teks digedein */
-      font-weight: 700; /* Teks lebih tebal */
-      line-height: 1.6; 
-      color: var(--paper-text); /* Hitam Gelap */
-      word-break: break-word;
-      box-shadow: inset 0 2px 10px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.2);
-    }
-
-    /* ===== MODAL & TOAST ===== */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; }
-    .modal-card { width: min(90%, 360px); background: rgba(10,12,14,0.95); border: 1px solid var(--platinum); border-radius: 2rem; padding: 1.8rem 1.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.7), 0 0 30px var(--platinum-glow); text-align: center; }
-    .modal-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .modal-title { color: var(--ice); font-size: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.8rem; }
-    .modal-message { color: var(--silver); font-size: 0.9rem; margin-bottom: 1.5rem; word-break: break-word; }
-    .modal-btn { background: rgba(0,0,0,0.5); border: 1px solid var(--platinum); color: var(--platinum); padding: 0.6rem 2rem; border-radius: 2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
-    .modal-btn:hover { background: var(--platinum); color: #0a0c0e; }
-    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(10,12,14,0.95); backdrop-filter: blur(12px); border: 1px solid var(--ice); border-radius: 3rem; padding: 0.7rem 1.5rem; color: var(--ice); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--platinum-glow); z-index: 3000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; white-space: nowrap; }
-
-    @media (max-width: 500px) { .vault { padding: 1.2rem; } h1 { font-size: 1.6rem; letter-spacing: 5px; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEXUS BURN · QUICK ROT</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f1215">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root {
+--bg: #0f1215; --card: rgba(10,12,14,0.85);
+--platinum: #b8c7d9; --platinum-glow: rgba(184,199,217,0.4);
+--ice: #c8d8e8; --gold: #d4af37; --silver: #9aaebf;
+--alert: #ff6b6b; --border: #1e2428;
+--paper-bg: #cbd5e1; --paper-text: #0a0c0e;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; min-height: 100dvh; background: radial-gradient(circle at 30% 10%, #0a0c0e, #030405); font-family: 'Inter', 'Courier New', monospace; display: flex; align-items: center; justify-content: center; color: #eef2f5; padding: 15px; overflow: auto; }
+.vault { width: 100%; max-width: 550px; background: var(--card); backdrop-filter: blur(14px); padding: 1.8rem; border-radius: 2rem; border: 1px solid rgba(212,175,55,0.25); box-shadow: 0 30px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05); display: flex; flex-direction: column; position: relative; }
+.header-ambient { width: 100%; height: 2px; margin-bottom: 1.2rem; background: linear-gradient(90deg, transparent, var(--gold), var(--ice), var(--gold), transparent); box-shadow: 0 0 10px rgba(212,175,55,0.4); }
+h1 { margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: 8px; background: linear-gradient(135deg, var(--ice), var(--gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-align: center; text-transform: uppercase; text-shadow: 0 0 12px rgba(212,175,55,0.3); }
+#nexusClock { text-align: center; font-size: 0.65rem; color: #8a9aa8; letter-spacing: 2px; margin-top: 8px; font-weight: bold; text-transform: uppercase; }
+.main-area { display: flex; flex-direction: column; gap: 1rem; margin-top: 20px; }
+textarea { width: 100%; background: var(--paper-bg); border: 2px solid var(--gold); color: var(--paper-text); padding: 1.2rem; border-radius: 1.2rem; font-size: 1.05rem; font-weight: 600; line-height: 1.6; outline: none; transition: 0.2s; font-family: 'Inter', monospace; height: 140px; resize: vertical; box-shadow: inset 0 2px 10px rgba(0,0,0,0.15); }
+textarea::placeholder { color: #64748b; font-weight: normal; }
+textarea:focus { box-shadow: 0 0 15px rgba(212,175,55,0.3), inset 0 2px 5px rgba(0,0,0,0.1); }
+button.btn-exec { width: 100%; padding: 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--gold); color: var(--gold); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; transition: 0.2s ease; font-size: 0.75rem; outline: none; border-radius: 2rem; backdrop-filter: blur(4px); }
+button.btn-exec:hover { background: var(--gold); color: #0a0c0e; box-shadow: 0 6px 14px rgba(212,175,55,0.4); transform: translateY(-2px); }
+.btn-red { border-color: var(--alert) !important; color: var(--alert) !important; }
+.btn-red:hover { background: var(--alert) !important; color: #fff !important; box-shadow: 0 0 20px rgba(255,107,107,0.3) !important; }
+#resultArea { margin-top: 1.2rem; display: none; text-align: center; border-top: 1px solid rgba(212,175,55,0.2); padding-top: 1.2rem; }
+.link-box { background: rgba(0,0,0,0.5); border: 1px dashed var(--ice); padding: 0.8rem; font-size: 0.7rem; word-break: break-all; margin-bottom: 0.8rem; color: var(--ice); border-radius: 1rem; font-family: monospace; }
+.action-row { display: flex; gap: 10px; margin-top: 0.8rem; }
+.btn-util { flex: 1; padding: 0.6rem; background: rgba(0,0,0,0.4); color: var(--silver); border: 1px solid var(--border); font-size: 0.65rem; text-transform: uppercase; cursor: pointer; border-radius: 2rem; font-weight: 600; transition: 0.2s; }
+.btn-util:hover { color: #fff; border-color: var(--gold); background: rgba(212,175,55,0.1); }
+.status-bar { font-size: 0.6rem; color: #6a7a8a; margin-top: 1.5rem; display: flex; justify-content: space-between; border-top: 1px solid rgba(212,175,55,0.2); padding-top: 0.8rem; letter-spacing: 2px; text-transform: uppercase; }
+#status { font-weight: bold; color: var(--gold); }
+#contentReveal { margin-top: 1.2rem; padding: 1.5rem; background: var(--paper-bg); border: 2px solid var(--gold); border-radius: 1rem; display: none; white-space: pre-wrap; font-size: 1.15rem; font-weight: 700; line-height: 1.6; color: var(--paper-text); word-break: break-word; box-shadow: inset 0 2px 10px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.3); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: center; justify-content: center; }
+.modal-card { width: min(90%, 360px); background: rgba(10,12,14,0.95); border: 1px solid var(--gold); border-radius: 2rem; padding: 1.8rem 1.5rem; box-shadow: 0 25px 50px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.2); text-align: center; }
+.modal-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.modal-title { color: var(--gold); font-size: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.8rem; }
+.modal-message { color: var(--silver); font-size: 0.9rem; margin-bottom: 1.5rem; word-break: break-word; }
+.modal-btn { background: rgba(0,0,0,0.5); border: 1px solid var(--gold); color: var(--gold); padding: 0.6rem 2rem; border-radius: 2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+.modal-btn:hover { background: var(--gold); color: #0a0c0e; }
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(10,12,14,0.95); backdrop-filter: blur(12px); border: 1px solid var(--gold); border-radius: 3rem; padding: 0.7rem 1.5rem; color: var(--gold); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(212,175,55,0.2); z-index: 3000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; white-space: nowrap; }
+@media (max-width: 500px) { .vault { padding: 1.2rem; } h1 { font-size: 1.6rem; letter-spacing: 5px; } }
+</style>
 </head>
 <body>
 
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal()">
-  <div class="modal-card">
-    <div class="modal-icon" id="modalIcon">💎</div>
-    <div class="modal-title" id="modalTitle">INFO</div>
-    <div class="modal-message" id="modalMessage"></div>
-    <button class="modal-btn" onclick="hideModal()">CLOSE</button>
-  </div>
+<div class="modal-card">
+<div class="modal-icon" id="modalIcon">⚡</div>
+<div class="modal-title" id="modalTitle">INFO</div>
+<div class="modal-message" id="modalMessage"></div>
+<button class="modal-btn" onclick="hideModal()">CLOSE</button>
 </div>
-
+</div>
 <div class="toast" id="toastMsg">COPIED</div>
 
 <div class="vault">
-  <div class="header-ambient"></div>
-  <h1>NEXUS BURN</h1>
-  <div id="nexusClock">SERVERLESS COMPRESSED</div>
+<div class="header-ambient"></div>
+<h1>QUICK ROT</h1>
+<div id="nexusClock">V5.1 PROTOCOL</div>
 
-  <div class="main-area">
-    <div id="createMode">
-      <textarea id="msgBody" placeholder="INSERT SECRET TEXT..."></textarea>
-      <div class="pass-wrapper" style="margin-top:12px">
-        <input type="password" id="msgPass" class="pass-input" placeholder="MASTER PASSKEY">
-        <button class="eye-btn" onclick="togglePass('msgPass', 'eye1')" id="eye1">👁️</button>
-      </div>
-      <button class="btn-exec" style="margin-top:15px" onclick="generateLink()">GENERATE BURN LINK</button>
-    </div>
+<div class="main-area">
+<div id="createMode">
+<textarea id="msgBody" placeholder="INSERT CASUAL MESSAGE..."></textarea>
+<button class="btn-exec" style="margin-top:15px" onclick="generateLink()">GENERATE QUICK LINK</button>
+</div>
 
-    <div id="readMode" style="display:none;">
-      <div class="pass-wrapper">
-        <input type="password" id="openPass" class="pass-input" placeholder="DECRYPT KEY">
-        <button class="eye-btn" onclick="togglePass('openPass', 'eye2')" id="eye2">👁️</button>
-      </div>
-      <button class="btn-exec btn-red" style="margin-top:15px" onclick="burnAndShow()">OPEN & OBLITERATE</button>
-      <div id="contentReveal"></div>
-    </div>
+<div id="readMode" style="display:none;">
+<button class="btn-exec btn-red" onclick="readAndWipe()">DECODE & OBLITERATE</button>
+<div id="contentReveal"></div>
+</div>
 
-    <div id="resultArea">
-      <div class="link-box" id="finalURL"></div>
-      <div class="action-row">
-        <button class="btn-util" style="border-color:var(--ice); color:var(--ice)" onclick="copyToClipboard()">COPY LINK</button>
-        <button class="btn-util" onclick="location.reload()">NEW BURN</button>
-      </div>
-    </div>
-  </div>
+<div id="resultArea">
+<div class="link-box" id="finalURL"></div>
+<div class="action-row">
+<button class="btn-util" style="border-color:var(--gold); color:var(--gold)" onclick="copyToClipboard()">COPY LINK</button>
+<button class="btn-util" onclick="location.reload()">NEW QUICK MSG</button>
+</div>
+</div>
+</div>
 
-  <div class="status-bar">
-    <span>COMPRESSION ALGORITHM ACTIVE</span>
-    <span id="status">READY</span>
-  </div>
+<div class="status-bar">
+<span>ROT CIPHER ENGINE</span>
+<span id="status">NO_PASS_REQUIRED</span>
+</div>
 </div>
 
 <script>
-  // ========== UI HELPERS ==========
-  const modal = document.getElementById('modalOverlay');
-  function showModal(title, message, icon = '💎') {
-    document.getElementById('modalTitle').innerText = title;
-    document.getElementById('modalMessage').innerText = message;
-    document.getElementById('modalIcon').innerText = icon;
-    modal.style.display = 'flex';
-  }
-  function hideModal() { modal.style.display = 'none'; }
-  function showToast(text, duration = 2000) {
-    const toast = document.getElementById('toastMsg');
-    toast.innerText = text; toast.style.opacity = '1';
-    setTimeout(() => toast.style.opacity = '0', duration);
-  }
+const modal = document.getElementById('modalOverlay');
+function showModal(title, message, icon = '⚡') {
+document.getElementById('modalTitle').innerText = title;
+document.getElementById('modalMessage').innerText = message;
+document.getElementById('modalIcon').innerText = icon;
+modal.style.display = 'flex';
+}
+function hideModal() { modal.style.display = 'none'; }
+function showToast(text, duration = 2000) {
+const toast = document.getElementById('toastMsg');
+toast.innerText = text; toast.style.opacity = '1';
+setTimeout(() => toast.style.opacity = '0', duration);
+}
+function updateClock() {
+document.getElementById('nexusClock').innerText = new Date().toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase();
+}
+setInterval(updateClock, 1000); updateClock();
 
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('nexusClock').innerText = now.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase();
-  }
-  setInterval(updateClock, 1000); updateClock();
+const hash = window.location.hash.substring(1);
+if (hash) {
+document.getElementById('createMode').style.display = 'none';
+document.getElementById('readMode').style.display = 'block';
+document.querySelector('h1').innerText = "INCOMING ROT";
+}
 
-  function togglePass(id, eyeId) {
-    const p = document.getElementById(id);
-    p.type = p.type === "password" ? "text" : "password";
-    document.getElementById(eyeId).innerText = p.type === "password" ? "👁️" : "🔒";
-  }
+function applyRot(text, mode) {
+const L_SHIFT = 18; const N_SHIFT = 8; const S_SHIFT = 3;
+const syms = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+let output = "";
 
-  const hash = window.location.hash.substring(1);
-  if (hash) {
-    document.getElementById('createMode').style.display = 'none';
-    document.getElementById('readMode').style.display = 'block';
-    document.querySelector('h1').innerText = "BURN DECRYPTION";
-  }
+if (mode === 'enc') {
+text = text.replace(/([\uD800-\uDBFF][\uDC00-\uDFFF])/g, m => `{E${m.codePointAt(0).toString(16)}}`);
+for (let i = 0; i < text.length; i++) {
+let c = text[i], code = text.charCodeAt(i);
+if (/[a-zA-Z]/.test(c)) {
+let start = c <= 'Z' ? 65 : 97;
+output += String.fromCharCode(((code - start + L_SHIFT) % 26) + start);
+} else if (/[0-9]/.test(c)) {
+output += String.fromCharCode(((code - 48 + N_SHIFT) % 10) + 48);
+} else if (syms.includes(c)) {
+let pos = syms.indexOf(c);
+output += syms[(pos + S_SHIFT) % syms.length];
+} else { output += c; }
+}
+return output;
+} else {
+let rotOut = "";
+for (let i = 0; i < text.length; i++) {
+let c = text[i], code = text.charCodeAt(i);
+if (/[a-zA-Z]/.test(c)) {
+let start = c <= 'Z' ? 65 : 97;
+rotOut += String.fromCharCode(((code - start + (26 - L_SHIFT)) % 26) + start);
+} else if (/[0-9]/.test(c)) {
+rotOut += String.fromCharCode(((code - 48 + (10 - N_SHIFT)) % 10) + 48);
+} else if (syms.includes(c)) {
+let pos = syms.indexOf(c);
+rotOut += syms[(pos + (syms.length - S_SHIFT)) % syms.length];
+} else { rotOut += c; }
+}
+return rotOut.replace(/\{E([0-9a-fA-F]+)\}/g, (m, hex) => String.fromCodePoint(parseInt(hex, 16)));
+}
+}
 
-  // ========== COMPRESSION ENGINE ==========
-  async function compressData(str) {
-    const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
-  }
+function encodeSafeBase64(str) {
+const bytes = new TextEncoder().encode(str);
+let binary = '';
+for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
-  async function decompressData(uint8Array) {
-    const stream = new Blob([uint8Array]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return await new Response(stream).text();
-  }
+function decodeSafeBase64(b64Url) {
+let b64 = b64Url.replace(/-/g, '+').replace(/_/g, '/');
+while (b64.length % 4) b64 += '=';
+const binary = atob(b64);
+const bytes = new Uint8Array(binary.length);
+for (let i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); }
+return new TextDecoder().decode(bytes);
+}
 
-  // ========== CRYPTO ENGINE ==========
-  async function deriveKey(p) {
-    const enc = new TextEncoder();
-    const km = await crypto.subtle.importKey("raw", enc.encode(p), "PBKDF2", false, ["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: enc.encode("SERVERLESS_SALT"), iterations: 100000, hash: "SHA-256" },
-      km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
-    );
-  }
+function generateLink() {
+const txt = document.getElementById('msgBody').value.trim();
+if (!txt) return showModal('EMPTY', 'Silakan masukkan pesan terlebih dahulu.', '⚠️');
 
-  async function process(t, p, mode) {
-    const key = await deriveKey(p);
-    if (mode === 'enc') {
-      const compressedPayload = await compressData(t); // KOMPRESI SEBELUM ENKRIPSI
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const buf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, compressedPayload);
-      const combined = new Uint8Array(12 + buf.byteLength);
-      combined.set(iv); combined.set(new Uint8Array(buf), 12);
-      return btoa(String.fromCharCode(...combined)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    } else {
-      try {
-        let base64 = t.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) base64 += '=';
-        const combined = new Uint8Array(atob(base64).split('').map(c => c.charCodeAt(0)));
-        const dec = await crypto.subtle.decrypt({ name: "AES-GCM", iv: combined.slice(0, 12) }, key, combined.slice(12));
-        return await decompressData(new Uint8Array(dec)); // DEKOMPRESI SETELAH DEKRIPSI
-      } catch (e) { return null; }
-    }
-  }
+const rotText = applyRot(txt, 'enc');
+const base64Url = encodeSafeBase64(rotText);
 
-  // ========== EXECUTION ==========
-  async function generateLink() {
-    const txt = document.getElementById('msgBody').value.trim();
-    const pass = document.getElementById('msgPass').value.trim();
-    if (!txt || !pass) return showModal('INCOMPLETE', 'Both message and passkey are required.', '🔐');
-    
-    const cipher = await process(txt, pass, 'enc');
-    const url = window.location.origin + window.location.pathname + '#' + cipher;
-    
-    document.getElementById('createMode').style.display = 'none';
-    document.getElementById('resultArea').style.display = 'block';
-    document.getElementById('finalURL').innerText = url;
-    document.querySelector('h1').innerText = "BURN LINK READY";
-  }
+const url = window.location.origin + window.location.pathname + '#' + base64Url;
+document.getElementById('createMode').style.display = 'none';
+document.getElementById('resultArea').style.display = 'block';
+document.getElementById('finalURL').innerText = url;
+document.querySelector('h1').innerText = "LINK READY";
+}
 
-  async function burnAndShow() {
-    const pass = document.getElementById('openPass').value.trim();
-    if (!pass) return showModal('KEY REQUIRED', 'Enter the decryption passkey.', '🔑');
-    
-    const cipher = window.location.hash.substring(1);
-    if (!cipher) return showModal('NO DATA', 'No encrypted payload found in URL.', '❌');
-    
-    const res = await process(cipher, pass, 'dec');
-    if (!res) return showModal('ACCESS DENIED', 'Invalid passkey or corrupted data.', '🚫');
-    
-    const reveal = document.getElementById('contentReveal');
-    reveal.innerText = res;
-    reveal.style.display = 'block';
-    
-    // Hapus hash dari URL (Obliterate effect)
-    history.replaceState(null, '', window.location.pathname);
-    document.getElementById('status').innerText = "OBLITERATED";
-    document.getElementById('readMode').querySelector('.btn-exec').style.display = 'none';
-    document.getElementById('openPass').style.display = 'none';
-    document.getElementById('eye2').style.display = 'none';
-  }
+function readAndWipe() {
+const hashData = window.location.hash.substring(1);
+if (!hashData) return showModal('NO DATA', 'Link kosong atau rusak.', '❌');
 
-  function copyToClipboard() {
-    const txt = document.getElementById('finalURL').innerText;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(txt).then(() => showToast('🔥 LINK COPIED')).catch(() => fallbackCopy(txt));
-    } else fallbackCopy(txt);
-  }
+try {
+const rotText = decodeSafeBase64(hashData);
+const plainText = applyRot(rotText, 'dec');
 
-  function fallbackCopy(text) {
-    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('📋 LINK COPIED');
-  }
+const reveal = document.getElementById('contentReveal');
+reveal.innerText = plainText;
+reveal.style.display = 'block';
 
-  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+history.replaceState(null, '', window.location.pathname);
+document.getElementById('status').innerText = "CLEARED";
+document.getElementById('readMode').querySelector('.btn-exec').style.display = 'none';
+} catch (e) {
+showModal('DECODE FAILED', 'Data korup atau format tidak sesuai.', '🚫');
+}
+}
+
+function copyToClipboard() {
+const txt = document.getElementById('finalURL').innerText;
+if (navigator.clipboard && window.isSecureContext) {
+navigator.clipboard.writeText(txt).then(() => showToast('⚡ LINK COPIED')).catch(() => fallbackCopy(txt));
+} else fallbackCopy(txt);
+}
+function fallbackCopy(text) {
+const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+showToast('📋 LINK COPIED');
+}
+
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
